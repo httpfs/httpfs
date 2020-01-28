@@ -1,0 +1,6 @@
+name: httpfs
+dependencies:
+  - python>=3.8.0
+  - pip
+  - pip:
+      - fusepy>=3.0.1

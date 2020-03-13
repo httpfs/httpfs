@@ -1,0 +1,16 @@
+{
+  "$id": "https://raw.githubusercontent.com/httpfs/httpfs/master/docs/HttpFsResponse.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HttpFsResponse",
+  "type": "object",
+  "properties": {
+    "error_no": {
+      "type": "integer",
+      "description": "0 on success, a system error code on failure (see https://python.readthedocs.io/en/latest/library/errno.html)"
+    },
+    "response_data": {
+      "type": "object",
+      "description": "The return value from the command, or error message if any"
+    }
+  }
+}

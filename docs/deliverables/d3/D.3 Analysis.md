@@ -36,7 +36,7 @@ Httpfs **server** is permitted.
 
 ## Model
 
-![](./HttpFs-UML.png)
+![](HttpFs-UML.png)
 
 
 ---

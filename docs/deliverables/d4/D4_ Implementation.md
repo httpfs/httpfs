@@ -1,9 +1,3 @@
----
-output:
-  word_document:
-    path: Exports/d4.docx
----
-
 # D4: Implementation
 
 ## Introduction

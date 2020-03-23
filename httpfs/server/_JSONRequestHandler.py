@@ -10,7 +10,6 @@ class _JSONRequestHandler(BaseHTTPRequestHandler):
     ERR_UNKNOWN = "Unknown error"
     ERR_CONTENT_LENGTH = "Content-Length was 0 or was not set"
 
-    # TODO: Keepalive connections not supported with default 1.0, but slower with 1.1 for some reason
     protocol_version = "HTTP/1.1"
     default_request_version = "HTTP/1.1"
 

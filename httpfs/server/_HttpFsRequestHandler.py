@@ -1,12 +1,13 @@
 import base64
+import errno
 import http
+import logging
 import os
 import stat
+import time
 
-from ._JSONRequestHandler import _JSONRequestHandler
 from httpfs.common import HttpFsRequest, HttpFsResponse
-import logging
-import errno
+from ._JSONRequestHandler import _JSONRequestHandler
 
 
 class _HttpFsRequestHandler(_JSONRequestHandler):
@@ -699,6 +700,7 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         self.send_json_response(http.HTTPStatus.OK, response_obj.as_dict())
 
     def on_readlink(self, httpfs_request_args):
+        # TODO: This doesn't work
         """
         Called when HttpFsRequest.OP_RELEASE is requested
         :param httpfs_request_args: The client request args dict
@@ -710,7 +712,6 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
             target = os.readlink(link_path)
             if target.startswith("/"):
                 target = os.path.relpath(target, self.server.get_fs_root())
-                target = "/" + target
             response_obj.set_data({"target": target})
         except Exception as e:
             logging.error("Error during readlink request: {}".format(e))
@@ -819,26 +820,30 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         uid = httpfs_request_args["uid"]
         gid = httpfs_request_args["gid"]
 
-        file_stats = os.stat(path)
-        is_owner = file_stats.st_uid == uid
-        is_group = file_stats.st_gid == gid
-
-        if uid == 0:
-            access_ok = True
-        elif is_owner:
-            access_ok = file_stats.st_mode & stat.S_IWUSR
-        elif is_group:
-            access_ok = file_stats.st_mode & stat.S_IWGRP
-        else:
-            access_ok = file_stats.st_mode & stat.S_IWOTH
-
         try:
+            file_stats = os.stat(path)
+            is_owner = file_stats.st_uid == uid
+            is_group = file_stats.st_gid == gid
+
+            if uid == 0:
+                access_ok = True
+            elif is_owner:
+                access_ok = file_stats.st_mode & stat.S_IWUSR
+            elif is_group:
+                access_ok = file_stats.st_mode & stat.S_IWGRP
+            else:
+                access_ok = file_stats.st_mode & stat.S_IWOTH
+
             if access_ok:
                 os.unlink(path)
             else:
                 logging.warning("Error during unlink request: Access denied")
                 response_obj.set_err_no(errno.EACCES)
                 response_obj.set_data({"message": "Access denied"})
+        except OSError as e:
+            logging.error("Error during unlink request: {}".format(e))
+            response_obj.set_err_no(e.errno)
+            response_obj.set_data({"message": str(e)})
         except Exception as e:
             logging.error("Error during unlink request: {}".format(e))
             response_obj.set_err_no(errno.EIO)
@@ -893,6 +898,8 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         Called when HttpFsRequest.OP_UTIMENS is received from the client
         :param httpfs_request_args: The client request arg dict
         """
+        start_time = time.time()
+
         response_obj = HttpFsResponse()
 
         file_descriptor = httpfs_request_args["file_descriptor"]
@@ -917,6 +924,7 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
 
         try:
             if access_ok:
+                write_start_time = time.time()
                 with self.server.get_fs_lock():
                     os.lseek(file_descriptor, offset, os.SEEK_SET)
                     bytes_written = os.write(file_descriptor, data)
@@ -925,6 +933,14 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
                         bytes_written)
                     )
                     response_obj.set_data({"bytes_written": bytes_written})
+                write_elapsed = time.time() - write_start_time
+                logging.debug(
+                    "Took {:.2f}s to write {} bytes ({:.2f} MB/s)".format(
+                        write_elapsed,
+                        bytes_written,
+                        bytes_written / 1024**2 / write_elapsed
+                    )
+                )
             else:
                 logging.warning("Error during write request: Access denied")
                 response_obj.set_err_no(errno.EACCES)
@@ -935,4 +951,14 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
             response_obj.set_err_no(errno.EIO)
             response_obj.set_data({"message": str(e)})
 
-        self.send_json_response(200, response_obj.as_dict())
+        # Send response
+        self.send_json_response(http.HTTPStatus.OK, response_obj.as_dict())
+        response_elapsed = time.time() - start_time
+
+        # Print 1/10 of the time
+        logging.debug(
+            "Took {:.2f}s to complete write response ({:.2f} MB/s)".format(
+                response_elapsed,
+                bytes_written / 1024**2 / response_elapsed
+            )
+        )

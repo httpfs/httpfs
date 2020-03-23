@@ -1,0 +1,31 @@
+version: "3.7"
+
+services:
+  httpfs-server:
+    container_name: httpfs-server
+    image: httpfs-server
+    build: 
+      context: .
+      dockerfile: docker/server.dockerfile
+    ports: 
+      - 8080:8080
+    volumes:
+      - /mnt/httpfs/server:/srv/httpfs
+
+
+  httpfs-client:
+    container_name: httpfs-client
+    image: httpfs-client
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+    build: 
+      context: .
+      dockerfile: docker/client.dockerfile
+    environment:
+      SERVER_HOST: httpfs-server
+    volumes:
+      - /mnt/httpfs/client:/mnt/httpfs:shared
+    devices:
+      - /dev/fuse:/dev/fuse
+

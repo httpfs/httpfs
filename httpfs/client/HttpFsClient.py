@@ -1,16 +1,22 @@
 import base64
 import binascii
+import concurrent.futures
 import errno
+import io
 import logging
+import math
+import time
 
 import requests
-from fuse import Operations, LoggingMixIn, FuseOSError, fuse_get_context
+from fuse import Operations, FuseOSError, fuse_get_context
 
 from httpfs.common import HttpFsRequest, HttpFsResponse
+from ._FuseLogger import _FuseLogger
 
 
-class HttpFsClient(LoggingMixIn, Operations):
+class HttpFsClient(_FuseLogger, Operations):
     client_version = 0.1
+    _ONE_KILOBYTE = 1024
 
     def __init__(self, server):
         """
@@ -21,6 +27,7 @@ class HttpFsClient(LoggingMixIn, Operations):
         self._http_keepalive_session = requests.Session()
         self._http_keepalive_session.headers.update({
             "Accept": "application/json",
+            "Accept-Encoding": "identity",
             "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version)
         })
 
@@ -44,9 +51,24 @@ class HttpFsClient(LoggingMixIn, Operations):
         try:
             response = self._http_keepalive_session.post(
                 self._server,
-                json=request.as_dict()
+                json=request.as_dict(),
+                allow_redirects=False,
+                timeout=10,
+                stream=True
             )
+
             response.raise_for_status()
+
+            # Minimal server response validation
+            is_json = response.headers.get("Content-Type").startswith(
+                "application/json"
+            )
+            is_httpfs_server = response.headers.get("Server").startswith(
+                "HttpFs"
+            )
+            if not is_json or not is_httpfs_server:
+                logging.error("Server response didn't come from HttpFs")
+                raise FuseOSError(errno.EIO)
 
             return HttpFsResponse.from_dict(response.json())
 
@@ -463,7 +485,9 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param fh: Optional file handle
         :return: The number of bytes actually written
         """
+        start_time = time.time()
         uid, gid, _ = fuse_get_context()
+
         response_obj = self._send_request(
             HttpFsRequest.OP_WRITE,
             file_descriptor=fh,
@@ -475,7 +499,20 @@ class HttpFsClient(LoggingMixIn, Operations):
 
         if response_obj.is_error():
             logging.error(response_obj.get_data()["message"])
-            raise FuseOSError(response_obj.get_error_no())
+            return FuseOSError(response_obj.get_error_no())
 
-        return response_obj.get_data()["bytes_written"]
+        bytes_written = response_obj.get_data()["bytes_written"]
+        elapsed_time = time.time() - start_time
+
+        # Print 1/10 of the time
+        logging.debug(
+            "Took {:.2f}s to write {} bytes ({:.2f} MB/s)".format(
+                elapsed_time,
+                bytes_written,
+                bytes_written / 1024**2 / elapsed_time
+            )
+        )
+
+        return bytes_written
+
 

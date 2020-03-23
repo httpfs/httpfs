@@ -1,0 +1,25 @@
+version: "3.7"
+
+services:
+  httpfs-server:
+    container_name: httpfs-server
+    image: httpfs/httpfs-server
+    ports: 
+      - 8080:8080
+    volumes:
+      - /mnt/httpfs/server:/srv/httpfs
+
+
+  httpfs-client:
+    container_name: httpfs-client
+    image: httpfs/httpfs-client
+    privileged: true
+    environment:
+      SERVER_HOST: httpfs-server
+    cap_add:
+      - SYS_ADMIN
+    volumes:
+      - /mnt/httpfs/client:/mnt/httpfs:shared
+    devices:
+      - /dev/fuse:/dev/fuse
+

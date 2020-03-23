@@ -8,7 +8,11 @@ import time
 
 from httpfs.common import HttpFsRequest, HttpFsResponse
 from ._JSONRequestHandler import _JSONRequestHandler
-
+from ._Authenticator import _Authenticator
+import logging
+import errno
+from httpfs.common._CredModels import _Cred, _CredStore
+from httpfs.common._CredStorage import _TextCredStore
 
 class _HttpFsRequestHandler(_JSONRequestHandler):
     STAT_FS_KEYS = [
@@ -37,6 +41,7 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
 
     server_version = "HttpFs/0.1"
     sys_version = ""
+    authenticator = _Authenticator(_TextCredStore())
 
     def log_message(self, format, *args):
         # Allow disable based on log level
@@ -58,13 +63,18 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         # TODO: API key authentication here
         try:
             if "User-Agent" not in self.headers or not self.headers["User-Agent"].startswith("HttpFsClient"):
-                raise RuntimeError("Invalid User-Agent header: Client is not an HttpFsClient")
+                raise RuntimeError(
+                    "Invalid User-Agent header: Client is not an HttpFsClient")
+            if not _HttpFsRequestHandler.authenticator.isCredValid(_Cred(request_dict["auth"])):
+                raise RuntimeError(
+                    "Invalid credentials: Client is not authorized")
 
             request = HttpFsRequest.from_dict(request_dict)
             self._delegate_request(request)
         except ValueError as e:
             response = HttpFsResponse(errno.EIO, {"message": str(e)})
-            self.send_json_response(http.HTTPStatus.BAD_REQUEST, response.as_dict())
+            self.send_json_response(
+                http.HTTPStatus.BAD_REQUEST, response.as_dict())
 
     def _delegate_request(self, httpFsRequest):
         """
@@ -169,7 +179,8 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
 
         else:
             logging.warning("Recieved unknown request from {}".format(client))
-            response_obj = HttpFsResponse(errno.EIO, {"message": "Method not implemented"})
+            response_obj = HttpFsResponse(
+                errno.EIO, {"message": "Method not implemented"})
             return self.send_json_response(
                 http.HTTPStatus.BAD_REQUEST,
                 response_obj.as_dict()
@@ -490,7 +501,8 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         path = self.get_abs_path(httpfs_request_args["path"])
 
         try:
-            os.mknod(path, mode=httpfs_request_args["mode"], device=httpfs_request_args["dev"])
+            os.mknod(
+                path, mode=httpfs_request_args["mode"], device=httpfs_request_args["dev"])
         except Exception as e:
             logging.error("Error during mknod request: {}".format(e))
             response_obj.set_err_no(errno.EIO)

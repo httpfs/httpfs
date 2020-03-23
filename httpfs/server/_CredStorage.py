@@ -6,13 +6,14 @@ from os import chmod
 
 
 class _TextCredStore(_CredStore):
-    def __init__(self, filePath: str):
+    def __init__(self, filePath: str = './creds'):
         self.filePath = filePath
         if not exists(filePath):
             file = open(filePath, 'w')
             file.close()
             # Only allow the user on the server to read and write to the keys file
             chmod(filePath, 0o600)
+        super().__init__()
 
     def storeCred(self, cred: _Cred):
         lock = RLock()

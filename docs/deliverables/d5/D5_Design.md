@@ -48,19 +48,25 @@ Our application has a client-server structure, so we naturally seperated our app
 
 ## Design Patterns
 Design Pattern 1: (Behavioral) Template method *RequestHandler-*[(Link)](https://github.com/httpfs/httpfs/tree/master/httpfs/server) HttpFsRequestHandler inherits from JSONRequestHandler and overrides some of the methods that it inherits.
+
 ![](https://i.imgur.com/TRnubAo.png)
+
 Figure 5.1- UML Diagram of implementation of the Template method in the request handler classes
 
 
 
 Design Pattern 2: (Structural) Decorator *fuse.Operations-*[(Link)](https://github.com/httpfs/httpfs/blob/master/httpfs/client/_FuseLogger.py) The fuse.Operations class is an abstract interface that enables the addition of behaviors to other classes when called during runtime.
+
 ![](https://i.imgur.com/eWmqFLv.png)
+
 Figure 5.2- UML Diagram of implementation of the Adapter pattern in the fuse.Operation class
 
 
 
 Design Pattern 3: (Behavioral) Strategy *CredStore-*[(Link)](https://github.com/httpfs/httpfs) The correct algorithm for the CredStore to use is selected at runtime and will choose the correct type of algorithms it needs to use.
+
 ![](https://i.imgur.com/4RY7E5I.png)
+
 Figure 5.3-  UML Diagram of implementation of the Strategy design pattern in the CredStore classes
 
 

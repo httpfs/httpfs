@@ -2,6 +2,7 @@ import base64
 import binascii
 import errno
 import logging
+from httpfs.common._CredModels import _Cred
 
 import requests
 from fuse import Operations, LoggingMixIn, FuseOSError, fuse_get_context
@@ -12,17 +13,21 @@ from httpfs.common import HttpFsRequest, HttpFsResponse
 class HttpFsClient(LoggingMixIn, Operations):
     client_version = 0.1
 
-    def __init__(self, server):
+    def __init__(self, hostname: str, port: str, cred: _Cred):
         """
         Constructor
         :param server: The server to connect to
         """
-        self._server = "http://{}".format(server)
+        # Now we can use ipv6 addr
+        self.server_hostname = hostname
+        self._server_url = "http://{}:{}".format(hostname, port)
         self._http_keepalive_session = requests.Session()
         self._http_keepalive_session.headers.update({
             "Accept": "application/json",
-            "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version)
+            "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version),
+            "Host": self.server_hostname
         })
+        self._cred = cred
 
     # Unimplemented filesystem ops
     bmap = None
@@ -38,12 +43,13 @@ class HttpFsClient(LoggingMixIn, Operations):
         """
         request = HttpFsRequest(
             request_type,
-            kwargs
+            kwargs,
+            self._cred
         )
 
         try:
             response = self._http_keepalive_session.post(
-                self._server,
+                self._server_url,
                 json=request.as_dict()
             )
             response.raise_for_status()
@@ -197,7 +203,8 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param source: Link name
         :return:
         """
-        response_obj = self._send_request(HttpFsRequest.OP_LINK, target=target, source=source)
+        response_obj = self._send_request(
+            HttpFsRequest.OP_LINK, target=target, source=source)
         if response_obj.is_error():
             logging.error(response_obj.get_data()["message"])
             raise FuseOSError(response_obj.get_error_no())
@@ -209,7 +216,8 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param mode: Permissions for the new directory
         :return:
         """
-        response_obj = self._send_request(HttpFsRequest.OP_MKDIR, path=path, mode=mode)
+        response_obj = self._send_request(
+            HttpFsRequest.OP_MKDIR, path=path, mode=mode)
         if response_obj.is_error():
             logging.error(response_obj.get_data()["message"])
             raise FuseOSError(response_obj.get_error_no())
@@ -225,7 +233,8 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param dev: Whether node is a 'special file' (i/o device)
         :return:
         """
-        response_obj = self._send_request(HttpFsRequest.OP_MKNOD, path=path, mode=mode, dev=dev)
+        response_obj = self._send_request(
+            HttpFsRequest.OP_MKNOD, path=path, mode=mode, dev=dev)
         if response_obj.is_error():
             logging.error(response_obj.get_data()["message"])
             raise FuseOSError(response_obj.get_error_no())
@@ -274,7 +283,8 @@ class HttpFsClient(LoggingMixIn, Operations):
 
         if response_obj.is_error():
             logging.error(
-                "Read failed for {}: '{}'".format(response_obj.get_data()["message"], path)
+                "Read failed for {}: '{}'".format(
+                    response_obj.get_data()["message"], path)
             )
             raise FuseOSError(response_obj.get_error_no())
 
@@ -309,7 +319,8 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param link: Path to link
         :return: Path to file that link points at
         """
-        response_obj = self._send_request(HttpFsRequest.OP_READLINK, link_path=link)
+        response_obj = self._send_request(
+            HttpFsRequest.OP_READLINK, link_path=link)
         if response_obj.get_error_no() == 0:
             return response_obj.get_data()["target"]
 
@@ -322,7 +333,8 @@ class HttpFsClient(LoggingMixIn, Operations):
         :param fh: Optional file handle
         :return:
         """
-        response_obj = self._send_request(HttpFsRequest.OP_RELEASE, file_descriptor=fh)
+        response_obj = self._send_request(
+            HttpFsRequest.OP_RELEASE, file_descriptor=fh)
         if response_obj.is_error():
             logging.error(response_obj.get_data()["message"])
             raise FuseOSError(response_obj.get_error_no())
@@ -478,4 +490,3 @@ class HttpFsClient(LoggingMixIn, Operations):
             raise FuseOSError(response_obj.get_error_no())
 
         return response_obj.get_data()["bytes_written"]
-

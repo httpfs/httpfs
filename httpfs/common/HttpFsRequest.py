@@ -1,3 +1,6 @@
+from ._CredModels import _Cred
+
+
 class HttpFsRequest:
     """
     Class representing a filesystem operation with JSON
@@ -27,7 +30,7 @@ class HttpFsRequest:
     OP_CHOWN = 21
     OP_CHMOD = 22
 
-    def __init__(self, op_type, args_dict, api_key=""):
+    def __init__(self, op_type, args_dict, api_key: _Cred):
         """
         Class cooresponding to the schema
         https://raw.githubusercontent.com/httpfs/httpfs/master/HttpFsRequest.schema.json
@@ -35,7 +38,6 @@ class HttpFsRequest:
         :param args_dict: Arguments for the operation
         :param api_key: API key for authentication with the server
         """
-        # TODO: API Key
         self._type = op_type
         self._args = args_dict
         self._api_key = api_key
@@ -61,7 +63,7 @@ class HttpFsRequest:
             return HttpFsRequest(
                 json_dict["type"],
                 json_dict["args"],
-                api_key=json_dict["auth"]
+                json_dict["auth"]
             )
         except Exception as e:
             raise ValueError("Invalid JSON for {}: '{}'".format(__class__, e))
@@ -71,5 +73,5 @@ class HttpFsRequest:
         return {
             "type": self._type,
             "args": self._args,
-            "auth": self._api_key
+            "auth": str(self._api_key)
         }

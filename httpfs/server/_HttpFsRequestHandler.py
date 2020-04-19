@@ -8,6 +8,7 @@ import time
 
 from httpfs.common import HttpFsRequest, HttpFsResponse
 from ._JSONRequestHandler import _JSONRequestHandler
+from httpfs.common import HttpFsRequest, HttpFsResponse
 from ._Authenticator import _Authenticator
 import logging
 import errno
@@ -60,12 +61,12 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         Called when a valid JSON request has been sent from a client
         :param request_dict: JSON request converted to dict object
         """
-        # TODO: API key authentication here
         try:
             if "User-Agent" not in self.headers or not self.headers["User-Agent"].startswith("HttpFsClient"):
                 raise RuntimeError(
                     "Invalid User-Agent header: Client is not an HttpFsClient")
-            if not _HttpFsRequestHandler.authenticator.isCredValid(_Cred(request_dict["auth"])):
+            auth_parts = request_dict["auth"].split('$')
+            if not _HttpFsRequestHandler.authenticator.isCredValid(_Cred(auth_parts["auth"][0], auth_parts["auth"][1], auth_parts["auth"][2])):
                 raise RuntimeError(
                     "Invalid credentials: Client is not authorized")
 

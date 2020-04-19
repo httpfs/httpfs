@@ -1,4 +1,4 @@
-from ._CredModels import _Cred, _CredStore
+from httpfs.common._CredModels import _Cred, _CredStore
 
 
 class _Authenticator():

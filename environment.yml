@@ -5,3 +5,4 @@ dependencies:
   - pip:
       - fusepy>=3.0.1
       - requests
+      - pyyaml

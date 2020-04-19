@@ -134,3 +134,5 @@ dmypy.json
 .python3/
 
 *.egg-info/
+creds
+config.yaml

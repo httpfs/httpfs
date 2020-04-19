@@ -31,7 +31,6 @@ class HttpFsClient(_FuseLogger, Operations):
         self._http_keepalive_session.headers.update({
             "Accept": "application/json",
             "Accept-Encoding": "identity",
-            "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version)
             "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version),
             "Host": self.server_hostname
         })

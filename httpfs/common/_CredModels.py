@@ -10,10 +10,10 @@ class _Cred():
         self.bearer = bearer
         self.key = key
 
-    def __eq__(self, other: _Cred) -> bool:
+    def __eq__(self, other):
         return isinstance(self, _Cred) and self.host == other.host and self.bearer == other.bearer and self.key == other.key
 
-    def __str__(self) -> str:
+    def __str__(self):
         return '{}${}${}'.format(self.host, self.bearer, self.key)
 
 

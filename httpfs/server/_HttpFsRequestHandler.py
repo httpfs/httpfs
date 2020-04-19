@@ -12,8 +12,10 @@ from httpfs.common import HttpFsRequest, HttpFsResponse
 from ._Authenticator import _Authenticator
 import logging
 import errno
+
 from httpfs.common._CredModels import _Cred, _CredStore
 from httpfs.common._CredStorage import _TextCredStore
+
 
 class _HttpFsRequestHandler(_JSONRequestHandler):
     STAT_FS_KEYS = [

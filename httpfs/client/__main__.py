@@ -30,18 +30,23 @@ try:
     if not os.path.exists(args.mount):
         logging.error("Mount point '{}' does not exist".format(args.mount))
         sys.exit(1)
+
     if not os.path.exists('./config.yaml'):
         logging.error("Config file './config.yaml' does not exist")
         with open('./config.yaml', 'w') as file:
             file.write('# Config Example:\n' +
                        '# User: My Name\n' + '# CredFile: ./creds\n')
         exit(1)
+
     config = None
     with open('./config.yaml', 'r') as file:
         config = yaml.load(file, yaml.Loader)
+
     credStore = _TextCredStore(config['CredFile'])
+
     [hostname, port] = args.server.rsplit(':', 1)
     cred = credStore.getCred(hostname, config['User'])
+
     if cred is None:
         logging.error("You have no API key for '{}'".format(hostname))
         exit(1)
@@ -52,7 +57,5 @@ try:
         foreground=True,
         allow_other=True
     )
-except RuntimeError as e:
-    logging.error("ERROR: {}".format(e))
-except PermissionError as e:
+except Exception as e:
     logging.error("ERROR: {}".format(e))

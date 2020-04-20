@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+import pathlib
+import socket
+import sys
+
+from httpfs.common.CredModels import Cred
+from httpfs.common.TextCredStore import TextCredStore
+from httpfs.server.Authenticator import Authenticator
+from httpfs.ssl import RSAKey, X509Cert
+from httpfs.common import CredStore
+
+
+def main():
+    ca_key_file = "ca.key"
+    ca_crt_file = "ca.crt"
+    server_key_file = "server.key"
+    server_crt_file = "server.crt"
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", help="HttpFS command")
+    parser.add_argument(
+        "sub_command",
+        help="HttpFS sub command",
+        nargs="*"
+    )
+    args = parser.parse_args()
+
+    if args.command == "gen-certs":
+        try:
+            do_gen_certs(
+                ca_key_file,
+                ca_crt_file,
+                server_key_file,
+                server_crt_file
+            )
+        except KeyboardInterrupt:
+            return 1
+    elif args.command == "add-api-key":
+        if not os.path.exists("creds"):
+            # Create read-write for the current user only
+            pathlib.Path("creds").touch(mode=0o600)
+
+        auth = Authenticator(TextCredStore())
+        if args.sub_command is not None:
+            host, bearer = args.sub_command
+            key = CredStore.generate_key()
+            cred = Cred(host, bearer, key)
+            auth.addValidCred(cred)
+            print(cred)
+        else:
+            raise RuntimeError("Invalid input")
+    else:
+        print("Unknown command", file=sys.stderr)
+        return 1
+
+    return 0
+
+
+def do_gen_certs(ca_key_file, ca_crt_file, server_key_file, server_crt_file):
+    country = input("Country: ").strip()
+    state = input("State: ").strip()
+    locality = input("City/Locality: ").strip()
+    organization = "httpfs-server"
+
+    # CA Key
+    ca_key = RSAKey()
+    ca_key.write(ca_key_file)
+    print("CA private key written to {}".format(ca_key_file))
+
+    # CA cert
+    ca_crt = X509Cert(
+        ca_key,
+        country,
+        state,
+        locality,
+        organization,
+        "httpfs@{}".format(socket.getfqdn())
+    )
+
+    ca_crt.sign(ca_key)
+    ca_crt.write(ca_crt_file)
+    print("CA certificate written to {}".format(ca_crt_file))
+
+    # Server key
+    server_key = RSAKey()
+    server_key.write(server_key_file)
+    print("Server private key written to {}".format(ca_key_file))
+
+    # Server cert
+    server_crt = X509Cert(
+        server_key,
+        country,
+        state,
+        locality,
+        organization,
+        socket.getfqdn(),
+        issuer=ca_crt.get_subject()
+    )
+
+    server_crt.sign(ca_key)
+    server_crt.write(server_crt_file, [ca_crt])
+
+    print("Server certificate written to {}".format(server_crt_file))
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print("ERROR: {}".format(e), file=sys.stderr)
+        sys.exit(1)
+

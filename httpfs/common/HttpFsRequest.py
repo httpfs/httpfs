@@ -1,4 +1,4 @@
-from ._CredModels import _Cred
+from .CredModels import Cred
 
 
 class HttpFsRequest:
@@ -30,7 +30,7 @@ class HttpFsRequest:
     OP_CHOWN = 21
     OP_CHMOD = 22
 
-    def __init__(self, op_type, args_dict, api_key: _Cred):
+    def __init__(self, op_type, args_dict, api_key: Cred):
         """
         Class cooresponding to the schema
         https://raw.githubusercontent.com/httpfs/httpfs/master/HttpFsRequest.schema.json

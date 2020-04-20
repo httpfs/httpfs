@@ -1,6 +1,7 @@
 import os
 import socket
 import threading
+import ssl
 from http.server import ThreadingHTTPServer
 
 from ._HttpFsRequestHandler import _HttpFsRequestHandler
@@ -21,8 +22,24 @@ class HttpFsServer(ThreadingHTTPServer):
     _tcp_keep_interval_secs = 3
     _tcp_keep_max_fails = 1
 
-    def __init__(self, port, fs_root):
+    def __init__(self, port, fs_root, tls_key=None, tls_cert=None):
+        """
+        :param port: Port to run the server on
+        :param fs_root: The HttpFS filesystem root on the server
+        :param tls_key: Optional key file for HTTPS
+        :param tls_cert: Optional cert file for HTTPS
+        """
         super().__init__(("", port), _HttpFsRequestHandler)
+
+        has_tls_key = tls_key is not None and os.path.exists(tls_key)
+        has_tls_crt = tls_cert is not None and os.path.exists(tls_cert)
+        if has_tls_key and has_tls_crt:
+            self.socket = ssl.wrap_socket(
+                self.socket,
+                keyfile=tls_key,
+                certfile=tls_cert,
+                server_side=True
+            )
 
         self._fs_root = os.path.realpath(fs_root)
         self._fs_lock = threading.Lock()

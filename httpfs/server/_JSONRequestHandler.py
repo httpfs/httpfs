@@ -1,6 +1,8 @@
 import json
 from http.server import BaseHTTPRequestHandler
 
+import ujson
+
 
 class _JSONRequestHandler(BaseHTTPRequestHandler):
     ERR_INVALID_CONTENT_TYPE = "Incompatible Content-Type"
@@ -16,14 +18,14 @@ class _JSONRequestHandler(BaseHTTPRequestHandler):
     @staticmethod
     def _dict_to_json(dict_obj):
         try:
-            return json.dumps(dict_obj)
+            return ujson.dumps(dict_obj)
         except json.JSONDecodeError as e:
             return e.msg
 
     @staticmethod
     def _json_to_dict(json_str):
         try:
-            return json.loads(json_str)
+            return ujson.loads(json_str)
         except json.JSONDecodeError as e:
             return e.msg
 
@@ -54,17 +56,6 @@ class _JSONRequestHandler(BaseHTTPRequestHandler):
         :return:
         """
         return self._validate_request()
-
-    # Invalid request methods
-    # def do_HEAD(self):
-    #     return self.on_invalid_request(_JSONRequestHandler.ERR_INVALID_REQ_TYPE)
-
-    # do_PUT = do_HEAD
-    # do_DELETE = do_HEAD
-    # do_CONNECT = do_HEAD
-    # do_OPTIONS = do_HEAD
-    # do_TRACE = do_HEAD
-    # do_PATCH = do_HEAD
 
     def _validate_request(self):
         """

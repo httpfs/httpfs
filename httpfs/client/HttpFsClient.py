@@ -1,11 +1,8 @@
 import base64
 import binascii
-import concurrent.futures
 import errno
-import io
 import logging
-from httpfs.common._CredModels import _Cred
-import math
+import os
 import time
 
 import requests
@@ -19,14 +16,19 @@ class HttpFsClient(_FuseLogger, Operations):
     client_version = 0.1
     _ONE_KILOBYTE = 1024
 
-    def __init__(self, hostname: str, port: str, cred: _Cred):
+    def __init__(self, hostname, port, cred, ca_file=None):
         """
         Constructor
         :param server: The server to connect to
+        :param ca_file: Optional CA cert file if the server uses HTTPS
         """
         # Now we can use ipv6 addr
         self.server_hostname = hostname
-        self._server_url = "http://{}:{}".format(hostname, port)
+        self._server_url = "http"
+        if ca_file is not None and os.path.exists(ca_file):
+            os.environ["REQUESTS_CA_BUNDLE"] = ca_file
+            self._server_url += "s"
+        self._server_url += "://{}:{}".format(hostname, port)
         self._http_keepalive_session = requests.Session()
         self._http_keepalive_session.headers.update({
             "Accept": "application/json",
@@ -78,6 +80,9 @@ class HttpFsClient(_FuseLogger, Operations):
 
             return HttpFsResponse.from_dict(response.json())
 
+        except requests.exceptions.HTTPError as e:
+            logging.error(e)
+            raise FuseOSError(errno.EACCES)
         except Exception as e:
             logging.error(e)
             raise FuseOSError(errno.EIO)

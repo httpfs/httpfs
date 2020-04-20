@@ -3,8 +3,8 @@ import logging
 import os
 import sys
 import yaml
-from httpfs.common._CredModels import _Cred, _CredStore
-from httpfs.common._CredStorage import _TextCredStore
+from httpfs.common.CredModels import Cred, CredStore
+from httpfs.common.TextCredStore import TextCredStore
 
 from fuse import FUSE
 from httpfs.client import HttpFsClient
@@ -22,6 +22,12 @@ parser.add_argument(
 parser.add_argument(
     'mount',
     help="The client directory to mount the server filesystem onto"
+)
+parser.add_argument(
+    "--ca-file",
+    dest="ca_file",
+    help="CA certificate file if the server uses HTTPS",
+    default=None
 )
 args = parser.parse_args()
 
@@ -42,7 +48,10 @@ try:
     with open('./config.yaml', 'r') as file:
         config = yaml.load(file, yaml.Loader)
 
-    credStore = _TextCredStore(config['CredFile'])
+    try:
+        credStore = TextCredStore(config['CredFile'])
+    except Exception as e:
+        raise RuntimeError("config.yaml is invalid: {}".format(e))
 
     [hostname, port] = args.server.rsplit(':', 1)
     cred = credStore.getCred(hostname, config['User'])
@@ -52,7 +61,7 @@ try:
         exit(1)
     # Mount the filesystem
     FUSE(
-        HttpFsClient(hostname, port, cred),
+        HttpFsClient(hostname, port, cred, ca_file=args.ca_file),
         args.mount,
         foreground=True,
         allow_other=True

@@ -1,11 +1,11 @@
-from ._CredModels import _Cred, _CredStore
+from .CredModels import Cred, CredStore
 from threading import RLock
 from os.path import exists
 from os import chmod
 from typing import Optional
 
 
-class _TextCredStore(_CredStore):
+class TextCredStore(CredStore):
     def __init__(self, filePath: str = './creds'):
         self.filePath = filePath
         if not exists(filePath):
@@ -15,11 +15,11 @@ class _TextCredStore(_CredStore):
             chmod(filePath, 0o600)
         super().__init__()
 
-    def storeCred(self, cred: _Cred):
+    def storeCred(self, cred: Cred):
         lock = RLock()
         with lock, open(self.filePath, 'a') as file:
             if not self.hasCred(cred):
-                file.write(cred.str() + '\n')
+                file.write(str(cred) + '\n')
 
     def deleteCred(self, host: str, bearer: str):
         lock = RLock()
@@ -36,19 +36,19 @@ class _TextCredStore(_CredStore):
             with open(self.filePath, 'w') as file:
                 file.writelines(lines)
 
-    def getCred(self, host: str, bearer: str) -> Optional[_Cred]:
+    def getCred(self, host: str, bearer: str) -> Optional[Cred]:
         lock = RLock()
         with lock, open(self.filePath, 'r') as file:
-            for line in file.readline():
-                dbCred = line.split('$')
+            for line in file.readlines():
+                dbCred = [l.strip() for l in line.split('$')]
                 if dbCred[0] == host and dbCred[1] == bearer:
-                    return _Cred(dbCred[0], dbCred[1], dbCred[2])
+                    return Cred(dbCred[0], dbCred[1], dbCred[2])
         return None
 
-    def hasCred(self, cred: _Cred) -> bool:
+    def hasCred(self, cred: Cred) -> bool:
         lock = RLock()
         with lock, open(self.filePath, 'r') as file:
-            for line in file.readline():
-                if line == cred.str():
+            for line in file.readlines():
+                if line.strip() == str(cred):
                     return True
         return False

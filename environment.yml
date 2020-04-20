@@ -8,3 +8,4 @@ dependencies:
       - requests
       - pyyaml
       - ujson
+      - pylint

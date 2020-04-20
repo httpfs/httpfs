@@ -32,8 +32,10 @@ $ docker-compose up httpfs-client
 ### Running the server without docker
 As the root user:
 ```shell script
-$ conda create -n httpfs -f environment.yml
+$ conda env create -n httpfs -f environment.yml
 $ conda activate httpfs
+$ pip install -e .
+# Generate an API key, see the next section
 $ python -m httpfs.server 8080 /mnt/httpfs/server
 ```
 Where 8080 is the port to run httpfs on, and /mnt/httpfs/server is the directory
@@ -42,8 +44,10 @@ to serve. See below for generating API keys and configuring TLS.
 ### Running the client without docker
 As the root user
 ```shell script
-$ conda create -n httpfs -f environment.yml
+$ conda env create -n httpfs -f environment.yml
 $ conda activate httpfs
+$ pip install -e .
+# Configure API key(s), see the next section
 $ python -m httpfs.client httpfs-server.my.domain:8080 /mnt/httpfs/client
 ```
 Where httpfs-server.my.domain is a running HttpFS server domain name

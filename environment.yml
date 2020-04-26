@@ -9,3 +9,6 @@ dependencies:
       - pyyaml
       - ujson
       - pylint
+      - pytest
+      - pytest-cov
+      - coverage<5

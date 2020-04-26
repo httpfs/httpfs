@@ -1,0 +1,6 @@
+[run]
+source = ./httpfs
+omit = **/__*__.py
+
+[report]
+show_missing = true

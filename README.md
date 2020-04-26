@@ -1,5 +1,6 @@
 # httpfs
 [![LINT](https://github.com/httpfs/httpfs/workflows/LINT/badge.svg?event=push)](https://github.com/httpfs/httpfs/actions?query=workflow%3ALINT)
+[![TEST](https://github.com/httpfs/httpfs/workflows/TEST/badge.svg?event=push)](https://github.com/httpfs/httpfs/actions?query=workflow%3ATEST)
 
 Network Filesystem over HTTP
 

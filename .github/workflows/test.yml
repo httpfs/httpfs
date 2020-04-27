@@ -1,6 +1,6 @@
 name: TEST
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   test:
@@ -14,4 +14,4 @@ jobs:
 
       - name: PyTest
         shell: bash
-        run: ~/.env/bin/pytest --cov=httpfs tests/
+        run: ~/.env/bin/pytest --cov=httpfs tests/unit/

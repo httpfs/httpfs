@@ -1,6 +1,9 @@
 [run]
 source = ./httpfs
-omit = **/__*__.py
+omit = 
+    httpfs/httpfs-cli 
+    **/__*__.py 
+    httpfs/common/CredModels.py
 
 [report]
 show_missing = true

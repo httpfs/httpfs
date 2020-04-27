@@ -6,9 +6,7 @@ import os
 import stat
 import time
 
-from httpfs.common import HttpFsRequest, HttpFsResponse
-from httpfs.common.CredModels import Cred
-from httpfs.common.TextCredStore import TextCredStore
+from httpfs.common import HttpFsRequest, HttpFsResponse, Cred, TextCredStore
 from .Authenticator import Authenticator
 from ._JSONRequestHandler import _JSONRequestHandler
 
@@ -758,21 +756,26 @@ class _HttpFsRequestHandler(_JSONRequestHandler):
         """
         response_obj = HttpFsResponse()
         path = self.get_abs_path(httpfs_request_args["path"])
-
+        _error = None
+        _err = None 
         try:
             os.rmdir(path)
-        except Exception as e:
-            if isinstance(e, FileNotFoundError):
-                logging.error("{} not found".format(path))
-                err = errno.ENOENT
-            elif isinstance(e, OSError):
-                err = e.errno
-            else:
-                err = errno.EIO
 
-            logging.error("Error during rmdir request: {}".format(e))
-            response_obj.set_err_no(err)
-            response_obj.set_data({"message": str(e)})
+        except FileNotFoundError as e:
+            logging.error("{} not found".format(path))
+            err = errno.ENOENT
+            _error = e
+        except OSError as e:
+            err = e.errno
+            _error = e
+        except Exception as e:
+            err = errno.EIO
+            _error = e
+
+        if _error != None:
+            logging.error("Error during rmdir request: {}".format(_error))
+            response_obj.set_err_no(_err)
+            response_obj.set_data({"message": str(_error)})
 
         self.send_json_response(200, response_obj.as_dict())
 

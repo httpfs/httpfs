@@ -32,7 +32,7 @@ class TextCredStore(CredStore):
                 (lambda dbCred: not (
                     dbCred[0] == host and dbCred[1] == bearer)),
                 lines)
-            lines = map(lambda dbCred: '$'.join(dbCred))
+            lines = ['$'.join(dbCred) for dbCred in lines]
             with open(self.filePath, 'w') as file:
                 file.writelines(lines)
 

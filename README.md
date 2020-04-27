@@ -16,7 +16,7 @@ By default the server will run on 8080 and serve up /mnt/httpfs/server. Make sur
 Docker and docker-compose are installed. The below commands download the HttpFs
 docker-compose file and start the server.
 ```shell script
-$ wget https://raw.githubusercontent.com/httpfs/httpfs/httpfs/docker-compose.yml
+$ wget https://raw.githubusercontent.com/httpfs/httpfs/master/docker-compose.yml
 $ docker-compose up httpfs-server
 ```
 
@@ -26,33 +26,32 @@ By default the client will attempt to connected to a server called
 httpfs-server on port 8080. Make sure Docker and docker-compose are installed.
 The below commands download the HttpFs docker-compose file and start the client.
 ```shell script
-$ wget https://raw.githubusercontent.com/httpfs/httpfs/httpfs/docker-compose.yml
+$ wget https://raw.githubusercontent.com/httpfs/httpfs/master/docker-compose.yml
 $ docker-compose up httpfs-client
 ```
 
 ### Running the server without docker
-As the root user:
+_Important Note:_ The `fuse` package must be installed for this to work
+
 ```shell script
-$ conda env create -n httpfs -f environment.yml
-$ conda activate httpfs
+$ conda env create -n httpfs_server -f environment.yml
+$ conda activate httpfs_server
 $ pip install -e .
 # Generate an API key, see the next section
-$ python -m httpfs.server 8080 /mnt/httpfs/server
+$ python -m httpfs.server server-port ~/httpfs-test/server
 ```
-Where 8080 is the port to run httpfs on, and /mnt/httpfs/server is the directory
-to serve. See below for generating API keys and configuring TLS.
+Where `server-port` is the port to run httpfs on, and `~/httpfs-test/server` is the directory to serve. See below for generating API keys and configuring TLS.
 
 ### Running the client without docker
 As the root user
 ```shell script
-$ conda env create -n httpfs -f environment.yml
-$ conda activate httpfs
+$ conda env create -n httpfs_client -f environment.yml
+$ conda activate httpfs_client
 $ pip install -e .
 # Configure API key(s), see the next section
-$ python -m httpfs.client httpfs-server.my.domain:8080 /mnt/httpfs/client
+$ python -m httpfs.client server-address:server-port ~/httpfs-test/client
 ```
-Where httpfs-server.my.domain is a running HttpFS server domain name
-and /mnt/httpfs/client is the directory to mount the filesystem on to.
+Where `server-address` and `server-port` are a running HttpFS server's address and port and `~/httpfs-test/client` is the directory to mount the filesystem on to.
 See below for generating API keys and configuring TLS.
 
 ### Generating API Keys

@@ -6,7 +6,7 @@ class Authenticator:
         self.credStore = credStore
 
     def isCredValid(self, cred: Cred) -> bool:
-        return self.credStore.hasCred(cred)
+        return self.credStore.has_cred(cred)
 
     def addValidCred(self, cred: Cred):
         self.credStore.storeCred(cred)

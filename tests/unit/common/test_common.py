@@ -14,12 +14,12 @@ def test_TextCredStore():
     key = repo.generate_key()
     cred = Cred('localhost', 'ur mom', key)
     repo.storeCred(cred)
-    assert repo.hasCred(cred)
+    assert repo.has_cred(cred)
     print(repo.getCred(cred.host, cred.bearer))
     print(cred)
     assert repo.getCred(cred.host, cred.bearer) == cred
     
     repo.deleteCred(cred.host, cred.bearer)
-    assert not repo.hasCred(cred)
+    assert not repo.has_cred(cred)
     assert repo.getCred(cred.host, cred.bearer) == None
     os.remove(repo.filePath)

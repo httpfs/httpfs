@@ -3,7 +3,7 @@ name: TEST
 on: [push, pull_request]
 
 jobs:
-  test:
+  unit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -15,3 +15,24 @@ jobs:
       - name: PyTest
         shell: bash
         run: ~/.env/bin/pytest --cov=httpfs tests/unit/
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create environment
+        shell: bash
+        run: conda env create -f environment.yml -p ~/.env
+
+      - name: Install HttpFs
+        shell: bash
+        run: ~/.env/bin/pip install -e .
+
+      - name: Update PATH
+        shell: bash
+        run: echo "::add-path::$HOME/.env/bin"
+
+      - name: PyTest
+        shell: bash
+        run: pytest tests/integration/

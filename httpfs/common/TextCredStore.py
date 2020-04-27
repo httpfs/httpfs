@@ -6,19 +6,20 @@ from typing import Optional
 
 
 class TextCredStore(CredStore):
-    def __init__(self, filePath: str = './creds'):
-        self.filePath = filePath
-        if not exists(filePath):
-            file = open(filePath, 'w')
+    def __init__(self, file_path: str = './creds'):
+        self.filePath = file_path
+        if not exists(file_path):
+            file = open(file_path, 'w')
             file.close()
-            # Only allow the user on the server to read and write to the keys file
-            chmod(filePath, 0o600)
+            # Only allow the user on the server to read and write to the keys
+            # file
+            chmod(file_path, 0o600)
         super().__init__()
 
     def storeCred(self, cred: Cred):
         lock = RLock()
         with lock, open(self.filePath, 'a') as file:
-            if not self.hasCred(cred):
+            if not self.has_cred(cred):
                 file.write(str(cred) + '\n')
 
     def deleteCred(self, host: str, bearer: str):
@@ -40,12 +41,12 @@ class TextCredStore(CredStore):
         lock = RLock()
         with lock, open(self.filePath, 'r') as file:
             for line in file.readlines():
-                dbCred = [l.strip() for l in line.split('$')]
-                if dbCred[0] == host and dbCred[1] == bearer:
-                    return Cred(dbCred[0], dbCred[1], dbCred[2])
+                db_cred = [part.strip() for part in line.split('$')]
+                if db_cred[0] == host and db_cred[1] == bearer:
+                    return Cred(db_cred[0], db_cred[1], db_cred[2])
         return None
 
-    def hasCred(self, cred: Cred) -> bool:
+    def has_cred(self, cred: Cred) -> bool:
         lock = RLock()
         with lock, open(self.filePath, 'r') as file:
             for line in file.readlines():

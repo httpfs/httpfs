@@ -31,7 +31,7 @@ class CredStore(ABC):
         pass
 
     @abstractmethod
-    def hasCred(self, cred: Cred) -> bool:
+    def has_cred(self, cred: Cred) -> bool:
         pass
 
     @staticmethod

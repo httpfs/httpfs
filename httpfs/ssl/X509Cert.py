@@ -46,11 +46,11 @@ class X509Cert(X509):
         """
         current_ip = X509Cert.get_current_ip()
         current_dns_name = socket.gethostbyaddr(current_ip)[0]
+        current_hostname = socket.gethostname()
         sans = set()
-        sans.add("DNS:*.{}".format(socket.getfqdn()))
-        sans.add("DNS:{}".format(current_dns_name))
-        sans.add("DNS:*.{}".format(current_dns_name))
-        sans.add("IP:{}".format(current_ip))
+        for dns_name in [socket.getfqdn(), current_dns_name, current_hostname]:
+            sans.add("DNS:*.{}".format(dns_name))
+            sans.add("DNS:{}".format(dns_name))
         sans = list(sans)
 
         self.add_extensions([X509Extension(

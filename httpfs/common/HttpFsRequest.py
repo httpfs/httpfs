@@ -1,6 +1,3 @@
-from .CredModels import Cred
-
-
 class HttpFsRequest:
     """
     Class representing a filesystem operation with JSON
@@ -30,7 +27,7 @@ class HttpFsRequest:
     OP_CHOWN = 21
     OP_CHMOD = 22
 
-    def __init__(self, op_type, args_dict, api_key: Cred):
+    def __init__(self, op_type, args_dict, api_key=None):
         """
         Class cooresponding to the schema
         https://raw.githubusercontent.com/httpfs/httpfs/master/HttpFsRequest.schema.json
@@ -48,22 +45,19 @@ class HttpFsRequest:
     def get_args(self):
         return self._args
 
-    def get_api_key(self):
-        return self._api_key
-
     @staticmethod
     def from_dict(json_dict):
         try:
-            for k in ["type", "args", "auth"]:
+            for k in ["type", "args"]:
                 if k not in json_dict.keys():
                     raise ValueError("Missing key '{}'".format(k))
-            for k, t in [("type", int), ("args", dict), ("auth", str)]:
+            for k, t in [("type", int), ("args", dict)]:
                 if not isinstance(json_dict[k], t):
                     raise ValueError("Key '{}' should be a {}".format(k, t))
+
             return HttpFsRequest(
                 json_dict["type"],
-                json_dict["args"],
-                json_dict["auth"]
+                json_dict["args"]
             )
         except Exception as e:
             raise ValueError("Invalid JSON for {}: '{}'".format(__class__, e))
@@ -72,6 +66,5 @@ class HttpFsRequest:
         # See HttpFsRequest.schema.json
         return {
             "type": self._type,
-            "args": self._args,
-            "auth": str(self._api_key)
+            "args": self._args
         }

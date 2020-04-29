@@ -5,6 +5,7 @@ import ssl
 from http.server import ThreadingHTTPServer
 
 from ._HttpFsRequestHandler import _HttpFsRequestHandler
+from ..common.credentials.TextCredStore import TextCredStore
 
 
 class HttpFsServer(ThreadingHTTPServer):
@@ -22,7 +23,7 @@ class HttpFsServer(ThreadingHTTPServer):
     _tcp_keep_interval_secs = 3
     _tcp_keep_max_fails = 1
 
-    def __init__(self, port, fs_root, tls_key=None, tls_cert=None):
+    def __init__(self, port, fs_root, cred_store_file=None, tls_key=None, tls_cert=None):
         """
         :param port: Port to run the server on
         :param fs_root: The HttpFS filesystem root on the server
@@ -43,6 +44,11 @@ class HttpFsServer(ThreadingHTTPServer):
 
         self._fs_root = os.path.realpath(fs_root)
         self._fs_lock = threading.Lock()
+
+        if cred_store_file is not None:
+            self._cred_store = TextCredStore(cred_store_file)
+        else:
+            self._cred_store = None
 
         # This line fixes the HTTP/1.1 keep-alive delay
         self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -75,3 +81,6 @@ class HttpFsServer(ThreadingHTTPServer):
 
     def get_fs_lock(self):
         return self._fs_lock
+
+    def get_cred_store(self):
+        return self._cred_store

@@ -13,5 +13,4 @@ RUN conda env update -n base -f environment.yml && \
 
 EXPOSE $PORT
 VOLUME $SRV_DIR
-RUN echo 'httpfs-server$docker-user$fake-api-key' > creds
 ENTRYPOINT ["bash", "-lc", "python -m httpfs.server $PORT $SRV_DIR"]

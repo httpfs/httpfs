@@ -17,6 +17,4 @@ RUN conda env update -n base -f environment.yml && \
     pip install -e .
 
 VOLUME $MNT_DIR
-RUN echo 'httpfs-server$docker-user$fake-api-key' > creds
-RUN printf 'User: docker-user\nCredFile: ./creds\n' > config.yaml
 ENTRYPOINT ["bash", "-lc", "python -m httpfs.client $SERVER_HOST:$SERVER_PORT $MNT_DIR"]

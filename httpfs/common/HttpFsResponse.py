@@ -12,7 +12,6 @@ class HttpFsResponse:
         :param error_no: Zero for success, https://python.readthedocs.io/en/latest/library/errno.html on error
         :param response_data: Bytes representing data associated with the response body
         """
-        # TODO: API Key
         self._error_no = error_no
         self._response_data = response_data
 

@@ -142,3 +142,8 @@ config.yaml
 # Generated HTTPS files
 *.key
 *.crt
+
+.env/
+
+# API keys
+*.json

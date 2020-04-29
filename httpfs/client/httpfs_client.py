@@ -1,3 +1,9 @@
+# pylint: disable=unused-argument
+
+"""
+Contains a class to be passed to fusepy.FUSE to handle filesystem operations
+"""
+
 import base64
 import binascii
 import errno
@@ -9,14 +15,18 @@ import requests
 from fuse import Operations, FuseOSError, fuse_get_context
 
 from httpfs.common import HttpFsRequest, HttpFsResponse
-from ._FuseLogger import _FuseLogger
+from .fuse_logger import _FuseLogger
 
 
 class HttpFsClient(_FuseLogger, Operations):
+    """
+    A FUSE client that talks to an HttpFs server
+    """
+
     client_version = 0.1
     _ONE_KILOBYTE = 1024
 
-    def __init__(self, hostname, port, cred, ca_file=None):
+    def __init__(self, hostname, port, api_key=None, ca_file=None):
         """
         Constructor
         :param server: The server to connect to
@@ -36,7 +46,7 @@ class HttpFsClient(_FuseLogger, Operations):
             "User-Agent": "HttpFsClient/{}".format(HttpFsClient.client_version),
             "Host": self.server_hostname
         })
-        self._cred = cred
+        self._api_key = api_key
 
     # Unimplemented filesystem ops
     bmap = None
@@ -52,16 +62,20 @@ class HttpFsClient(_FuseLogger, Operations):
         """
         request = HttpFsRequest(
             request_type,
-            kwargs,
-            self._cred
+            kwargs
         )
 
         try:
+            headers = dict()
+            if self._api_key is not None:
+                headers["Authorization"] = self._api_key
+
             response = self._http_keepalive_session.post(
                 self._server_url,
                 json=request.as_dict(),
                 allow_redirects=False,
                 timeout=10,
+                headers=headers,
                 stream=True
             )
 
@@ -80,11 +94,11 @@ class HttpFsClient(_FuseLogger, Operations):
 
             return HttpFsResponse.from_dict(response.json())
 
-        except requests.exceptions.HTTPError as e:
-            logging.error(e)
+        except requests.exceptions.HTTPError as http_error:
+            logging.error(http_error)
             raise FuseOSError(errno.EACCES)
-        except Exception as e:
-            logging.error(e)
+        except Exception as exception:
+            logging.error(exception)
             raise FuseOSError(errno.EIO)
 
     def access(self, path, mode):
@@ -310,15 +324,16 @@ class HttpFsClient(_FuseLogger, Operations):
 
         if response_obj.is_error():
             logging.error(
-                "Read failed for {}: '{}'".format(
-                    response_obj.get_data()["message"], path)
+                "Read failed for %s: '%s'",
+                response_obj.get_data()["message"],
+                path
             )
             raise FuseOSError(response_obj.get_error_no())
 
         try:
             return base64.standard_b64decode(response_obj.get_data()["bytes_read"])
-        except binascii.Error as e:
-            logging.error("Error decoding read data: '{}'".format(e))
+        except binascii.Error as encoding_error:
+            logging.error("Error decoding read data: '%s'", encoding_error)
             raise FuseOSError(errno.EIO)
 
     def readdir(self, path, fh=None):
@@ -531,5 +546,3 @@ class HttpFsClient(_FuseLogger, Operations):
         )
 
         return bytes_written
-
-

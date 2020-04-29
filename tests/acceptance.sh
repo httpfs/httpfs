@@ -7,24 +7,19 @@ ENV_DIR=./.env
 
 mkdir -p $SERVER_DIR $CLIENT_DIR
 
+if [ -d $ENV_DIR ]; then
+  rm -rf $ENV_DIR
+fi
+
 # Create environment
 echo "Creating environment..."
-conda env create --prefix ./.env -f environment.yml > /dev/null 2>&1
+conda env create --prefix $ENV_DIR -f environment.yml > /dev/null 2>&1
 export PATH="$ENV_DIR/bin:$PATH"
 pip install -e .
 
 # Run server
 python -m httpfs.server 8080 /tmp/httpfs/server > /dev/null 2>&1 &
 SERVER_PID="$!"
-
-# Add API key for server
-./bin/httpfs-cli add-api-key $(hostname) test-user > ./client-creds
-
-# Add API key for client
-cat << EOF >> config.yaml
-User: test-user
-CredFile: ./client-creds
-EOF
 
 # Run client
 python -m httpfs.client $(hostname):8080 /tmp/httpfs/client > /dev/null 2>&1 &
@@ -43,4 +38,3 @@ sleep 3 > /dev/null 2>&1
 # Clean up
 rm -rf /tmp/httpfs
 rm -rf ./.env
-rm -f creds client-creds config.yaml

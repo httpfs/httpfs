@@ -1,0 +1,6 @@
+[MESSAGES CONTROL]
+disable =
+    arguments-differ,
+    too-few-public-methods,
+    broad-except,
+    too-many-public-methods

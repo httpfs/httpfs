@@ -1,8 +1,4 @@
 import base64
-import json
-import os
-import sys
-import unittest
 import unittest.mock as mock
 from unittest.mock import MagicMock
 
@@ -11,7 +7,6 @@ from httpfs.common import HttpFsRequest, HttpFsResponse
 
 HOSTNAME = "test-host"
 PORT = 8080
-CRED = "fake-cred-as-str"
 EXPECTED_URL = "http://{}:{}".format(HOSTNAME, PORT)
 
 FAKE_API_KEY = "1234"
@@ -22,33 +17,40 @@ FAKE_REQ_ARGS = {
 }
 FAKE_POST_REQ = {
     "type": FAKE_REQ_TYPE,
-    "args": FAKE_REQ_ARGS,
-    "auth": CRED
+    "args": FAKE_REQ_ARGS
 }
 
 def test_constructor_without_ssl():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
     assert client.server_hostname == HOSTNAME
     assert client._server_url == EXPECTED_URL
-    assert client._cred == CRED
+    assert client._api_key == None
+
+    client = HttpFsClient(
+        HOSTNAME,
+        PORT,
+        api_key=FAKE_API_KEY,
+        ca_file=None
+    )
+
+    assert client.server_hostname == HOSTNAME
+    assert client._server_url == EXPECTED_URL
+    assert client._api_key == FAKE_API_KEY
 
 @mock.patch("os.path.exists", return_value=True)
 def test_constructor_with_ssl(mocker):
     client_w_ca = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file="test-file.crt"
     )
 
     assert client_w_ca.server_hostname == HOSTNAME
-    assert client_w_ca._cred == CRED
     assert client_w_ca._server_url.startswith("https")
 
 
@@ -56,7 +58,6 @@ def test_send_request():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -73,9 +74,44 @@ def test_send_request():
     })
 
     # Fake POST request method
-    def fake_post(server_url, json=None, allow_redirects=False, timeout=10, stream=True):
+    def fake_post(server_url, **kwargs):
         assert server_url == client._server_url
-        assert json == FAKE_POST_REQ
+        assert kwargs["json"] == FAKE_POST_REQ
+        return fake_response
+
+    # Fake requests.session
+    fake_session = MagicMock()
+    fake_session.post = fake_post
+
+    client._http_keepalive_session = fake_session
+    client._send_request(FAKE_REQ_TYPE, **FAKE_REQ_ARGS)
+
+
+def test_send_request_with_api_key():
+    client = HttpFsClient(
+        HOSTNAME,
+        PORT,
+        api_key=FAKE_API_KEY,
+        ca_file=None
+    )
+
+    # Fake response from the server
+    fake_response = MagicMock()
+    fake_response.raise_for_status = MagicMock(return_value=None)
+    fake_response.headers = {
+        "Content-Type": "application/json",
+        "Server": "HttpFs"
+    }
+    fake_response.json = MagicMock(return_value={
+        "error_no": HttpFsResponse.ERR_NONE,
+        "response_data": {}
+    })
+
+    # Fake POST request method
+    def fake_post(server_url, **kwargs):
+        assert server_url == client._server_url
+        assert "Authorization" in kwargs["headers"] and kwargs["headers"]["Authorization"] == FAKE_API_KEY
+        assert kwargs["json"] == FAKE_POST_REQ
         return fake_response
 
     # Fake requests.session
@@ -89,7 +125,6 @@ def test_access():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -112,7 +147,6 @@ def test_create():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -137,7 +171,6 @@ def test_chmod():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -160,7 +193,6 @@ def test_chown():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -181,7 +213,6 @@ def test_flush():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -201,7 +232,6 @@ def test_fsync():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -223,7 +253,6 @@ def test_getattr():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -242,7 +271,6 @@ def test_link():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -263,7 +291,6 @@ def test_mkdir():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -285,7 +312,6 @@ def test_mknod():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -308,7 +334,6 @@ def test_open():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -331,7 +356,6 @@ def test_read():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -359,7 +383,6 @@ def test_readdir():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -382,7 +405,6 @@ def test_readlink():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -403,7 +425,6 @@ def test_release():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -423,7 +444,6 @@ def test_rename():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -446,7 +466,6 @@ def test_rmdir():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -465,7 +484,6 @@ def test_statfs():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -484,7 +502,6 @@ def test_symlink():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -505,7 +522,6 @@ def test_truncate():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -526,7 +542,6 @@ def test_unlink():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -547,7 +562,6 @@ def test_utimens():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 
@@ -570,7 +584,6 @@ def test_write():
     client = HttpFsClient(
         HOSTNAME,
         PORT,
-        CRED,
         ca_file=None
     )
 

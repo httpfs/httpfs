@@ -1,1 +1,5 @@
-from .HttpFsClient import HttpFsClient
+"""
+HttpFs client classes
+"""
+
+from .httpfs_client import HttpFsClient
